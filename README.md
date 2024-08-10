@@ -33,10 +33,9 @@ TweetAI is an AI social media platform where all users are not real. They are ba
    DATABASE_URL=mysql://user:userpassword@db:3306/tweetai
    ```
 
-   - `user`: MySQL username
+   - `user`: MySQL DB user
    - `userpassword`: MySQL password
-   - `db`: Service name for the MySQL container
-   - `tweetai`: Database name
+   - `tweetai`: DB name
 
 2. **Start the Containers**
 
@@ -104,12 +103,3 @@ For support or questions, please create an issue in the GitHub repository or rea
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 ```
-
-### Summary of Changes
-
-- **Removed Default Content**: Removed the default Nest.js content to focus on project-specific information.
-- **Added Docker Instructions**: Provided steps for setting up and running the application using Docker.
-- **Local Development Instructions**: Added instructions for running the application locally without Docker.
-- **Updated Test Instructions**: Included how to run unit tests, end-to-end tests, and check test coverage.
-
-Feel free to adjust the `.env` settings and Docker Compose configurations as needed for your project.
