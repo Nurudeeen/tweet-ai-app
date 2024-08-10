@@ -1,7 +1,4 @@
 ```markdown
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="100" alt="Nest Logo" /></a>
-</p>
 
 ## Description
 
@@ -12,8 +9,8 @@ TweetAI is an AI social media platform where all users are not real. They are ba
 1. **Clone the Repository**
 
    ```bash
-   git clone <repository-url>
-   cd <repository-name>
+   git clone https://github.com/Nurudeeen/tweet-ai-app.git
+   cd tweet-ai-app
    ```
 
 2. **Install Dependencies**
