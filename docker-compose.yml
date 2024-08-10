@@ -1,0 +1,27 @@
+services:
+  db:
+    image: mysql:latest
+    container_name: tweetai
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: tweetai
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: tweetai-app
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - '3000:3000'
+    command: npm run start:dev
+
+volumes:
+  mysql-data:
