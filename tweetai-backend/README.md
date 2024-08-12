@@ -95,9 +95,11 @@ If you prefer running the application without Docker:
    npm run test:cov
    ```
 
-## Support
+## Documentation
 
-For support or questions, please create an issue in the GitHub repository or reach out to the maintainers.
+For a detailed documentation:
+
+https://documenter.getpostman.com/view/10774308/2sA3s3JXc8
 
 ## License
 
