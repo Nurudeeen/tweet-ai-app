@@ -18,8 +18,9 @@ export class Comment extends Model {
   body: string;
 
   @ForeignKey(() => Post)
-  @Column
-  postId: number;
+  @Column({ type: DataType.UUID })  // Explicitly define the type here
+  postId: string;
+  
 
   @BelongsTo(() => Post)
   post: Post;

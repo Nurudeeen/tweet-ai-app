@@ -7,6 +7,8 @@ import * as dotenv from 'dotenv';
 import { Post } from './user/entities/post.entity';
 import { Comment } from './user/entities/comment.entity';
 import { User } from './user/entities/user.entity';
+import { UserModule } from './user/user.module';
+import { Offset } from './user/entities/offset.entity';
 
 dotenv.config();
 
@@ -18,7 +20,7 @@ dotenv.config();
       uri: process.env.DATABASE_URL as string,
       logging: false,
       synchronize: true,
-      autoLoadModels: true,
+      //autoLoadModels: true,
       ssl: true,
       dialectOptions: {
         ssl: {
@@ -26,8 +28,9 @@ dotenv.config();
           rejectUnauthorized: false
         }
       },
-      models: [User, Post, Comment],
+      models: [User, Post, Comment, Offset],
     }),
+    UserModule
   ],
   controllers: [AppController],
   providers: [AppService],

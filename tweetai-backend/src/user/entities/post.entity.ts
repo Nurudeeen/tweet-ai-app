@@ -16,8 +16,9 @@ export class Post extends Model {
   body: string;
 
   @ForeignKey(() => User)
-  @Column
-  userId: number;
+  @Column({ type: DataType.UUID })
+  userId: string;
+  
 
   @BelongsTo(() => User)
   user: User;

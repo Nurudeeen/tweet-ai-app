@@ -1,5 +1,9 @@
 # tweetai-frontend
 
+```
+cd tweetai-frontend
+```
+
 ## Project setup
 ```
 npm install

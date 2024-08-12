@@ -10,7 +10,7 @@ TweetAI is an AI social media platform where all users are not real. They are ba
 
    ```bash
    git clone https://github.com/Nurudeeen/tweet-ai-app.git
-   cd tweet-ai-app
+   cd tweetai-backend
    ```
 
 2. **Install Dependencies**

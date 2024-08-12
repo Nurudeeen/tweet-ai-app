@@ -5,8 +5,9 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { User } from './entities/user.entity';
 import { Post } from './entities/post.entity';
 import { Comment } from './entities/comment.entity';
-import { CommentOffset, PostOffset, UserOffset } from './entities/offset.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Offset } from './entities/offset.entity';
+import { randomBytes } from 'crypto';
+import { AutobotGateway } from './autobot.gateway';
 
 @Injectable()
 export class UserService {
@@ -14,61 +15,55 @@ export class UserService {
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectModel(Post) private readonly postModel: typeof Post,
     @InjectModel(Comment) private readonly commentModel: typeof Comment,
-    @InjectModel(UserOffset) private readonly userOffsetModel: typeof UserOffset,
-    @InjectModel(PostOffset) private readonly postOffsetModel: typeof PostOffset,
-    @InjectModel(CommentOffset) private readonly commentOffsetModel: typeof CommentOffset,
+    @InjectModel(Offset) private readonly offsetModel: typeof Offset,
+    private readonly autobotGateway: AutobotGateway, // Inject the WebSocket Gateway
   ) {}
 
   private readonly logger = new Logger(UserService.name);
-
-  private readonly USERS_OFFSET_KEY = 'users_offset';
-  private readonly POSTS_OFFSET_KEY = 'posts_offset';
-  private readonly COMMENTS_OFFSET_KEY = 'comments_offset';
 
   // This method is run every hour to create 500 Autobots
   @Cron(CronExpression.EVERY_HOUR)
   async handleCron() {
     try {
-      this.logger.debug('Starting to create 500 new Autobots.');
+      this.autobotGateway.emitAutobotCountUpdate(await this.userModel.count());
 
-      // Fetch users, posts, and comments
-      const [usersResponse, postsResponse, commentsResponse] = await Promise.all([
-        axios.get('https://jsonplaceholder.typicode.com/users'),
-        axios.get('https://jsonplaceholder.typicode.com/posts'),
-        axios.get('https://jsonplaceholder.typicode.com/comments'),
+      this.logger.debug('Starting to create 500 new Autobots.');
+    
+      // Fetch the entire datasets once
+      const [users, posts, comments] = await Promise.all([
+        this.fetchData('https://jsonplaceholder.typicode.com/users'),
+        this.fetchData('https://jsonplaceholder.typicode.com/posts'),
+        this.fetchData('https://jsonplaceholder.typicode.com/comments'),
       ]);
 
-      const users = usersResponse.data;
-      const posts = postsResponse.data;
-      const comments = commentsResponse.data;
-
       // Get the last offsets from the database
-      let userOffsetRecord = await this.userOffsetModel.findOne({ where: { key: this.USERS_OFFSET_KEY } });
-      let postOffsetRecord = await this.postOffsetModel.findOne({ where: { key: this.POSTS_OFFSET_KEY } });
-      let commentOffsetRecord = await this.commentOffsetModel.findOne({ where: { key: this.COMMENTS_OFFSET_KEY } });
+      let userOffsetRecord = await this.offsetModel.findOne({ where: { key: 'users_offset' } });
+      let postOffsetRecord = await this.offsetModel.findOne({ where: { key: 'posts_offset' } });
+      let commentOffsetRecord = await this.offsetModel.findOne({ where: { key: 'comments_offset' } });
 
       if (!userOffsetRecord) {
-        userOffsetRecord = await this.userOffsetModel.create({ key: this.USERS_OFFSET_KEY, value: 0 });
+        userOffsetRecord = await this.offsetModel.create({ key: 'users_offset', value: 0 });
       }
       if (!postOffsetRecord) {
-        postOffsetRecord = await this.postOffsetModel.create({ key: this.POSTS_OFFSET_KEY, value: 0 });
+        postOffsetRecord = await this.offsetModel.create({ key: 'posts_offset', value: 0 });
       }
       if (!commentOffsetRecord) {
-        commentOffsetRecord = await this.commentOffsetModel.create({ key: this.COMMENTS_OFFSET_KEY, value: 0 });
+        commentOffsetRecord = await this.offsetModel.create({ key: 'comments_offset', value: 0 });
       }
 
-      let userOffset = userOffsetRecord.dataValues;
-      let postOffset = postOffsetRecord.dataValues;
-      let commentOffset = commentOffsetRecord.dataValues;
+      let userOffset = userOffsetRecord.value;
+      let postOffset = postOffsetRecord.value;
+      let commentOffset = commentOffsetRecord.value;
 
       // Create 500 new Autobots starting from the last user offset
       for (let i = 0; i < 500; i++) {
         const userIndex = (userOffset + i) % users.length;
         const user = users[userIndex];
+
         const newUser = await this.userModel.create({
-          name: `${user.name}-${uuidv4()}`,
-          username: `${user.username}-${uuidv4()}`,
-          email: `${user.email}-${uuidv4()}`,
+          name: `${user.name}-${this.generateRandomString(6)}`,
+          username: `${user.username}-${this.generateRandomString(6)}`,
+          email: `${user.email}-${this.generateRandomString(6)}`,
           address: user.address,
           phone: user.phone,
           website: user.website,
@@ -80,7 +75,7 @@ export class UserService {
           const postIndex = (postOffset + j) % posts.length;
           const post = posts[postIndex];
           const newPost = await this.postModel.create({
-            title: `${post.title}-${uuidv4()}`,
+            title: `${post.title}-${this.generateRandomString(8)}`,
             body: post.body,
             userId: newUser.id,
           });
@@ -90,7 +85,7 @@ export class UserService {
             const commentIndex = (commentOffset + k) % comments.length;
             const comment = comments[commentIndex];
             await this.commentModel.create({
-              name: `${comment.name}-${uuidv4()}`,
+              name: `${comment.name}-${this.generateRandomString(6)}`,
               email: comment.email,
               body: comment.body,
               postId: newPost.id,
@@ -108,10 +103,25 @@ export class UserService {
       await postOffsetRecord.save();
       await commentOffsetRecord.save();
 
+      // Emit the updated Autobot count
+      const totalAutobots = await this.userModel.count();
+      this.autobotGateway.emitAutobotCountUpdate(totalAutobots); // Emit the new count
+
       this.logger.debug('Successfully created 500 new Autobots with their posts and comments.');
     } catch (error) {
       this.logger.error('Failed to create Autobots', error);
     }
+  }
+
+  // Helper function to fetch the entire dataset
+  private async fetchData(apiUrl: string) {
+    const response = await axios.get(apiUrl);
+    return response.data;
+  }
+
+  // Helper function to generate a random string
+  private generateRandomString(length: number): string {
+    return randomBytes(length).toString('hex');
   }
 
   // Method to get all Autobots
@@ -134,7 +144,7 @@ export class UserService {
   }
 
   // Method to get a post’s comments
-  async getPostComments(postId: number, limit: number, offset: number): Promise<Comment[]> {
+  async getPostComments(postId: string, limit: number, offset: number): Promise<Comment[]> {
     return this.commentModel.findAll({
       where: { postId },
       limit,

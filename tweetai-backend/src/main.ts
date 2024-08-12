@@ -11,6 +11,7 @@ import { logger } from './utils/logger';
 import { responseHandler } from './utils';
 import { ValidationError } from 'class-validator';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
+import { Sequelize } from 'sequelize-typescript';
 
 dotenv.config();
 
@@ -79,7 +80,8 @@ async function bootstrap() {
       });
     },
   }));
-
+  const sequelize = app.get(Sequelize);
+  await sequelize.sync();
   const port = process.env.PORT || 3000;
   await app.listen(port, () => {
     logger.info(`Service is running on port ${port}`);
